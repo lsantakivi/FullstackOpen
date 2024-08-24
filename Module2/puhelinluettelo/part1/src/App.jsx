@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import axios from 'axios'
+import personService from './services/persons'
 
 const Filter = ({newFilter, handleFilterChange}) => {
   return(
@@ -34,19 +35,22 @@ const PersonForm = ({addPerson, newName, handleNameChange, newNumber, handleNumb
   )
 }
 
-const DisplayPerson = ({person}) => {
+const DisplayPerson = ({person, deleteFunction}) => {
   return (
     <p>
-      {person.name} {person.number}
+      {person.name} {person.number} 
+      <button  onClick={() => deleteFunction(person.id)}>
+        delete
+      </button>
     </p>
   )
 }
 
-const Persons = ({persons}) => {
+const Persons = ({persons, deleteFunction}) => {
   return (
     <div>
       {persons.map((person) => 
-        <DisplayPerson key={person.name} person={person}/>)}
+        <DisplayPerson key={person.name} person={person} deleteFunction={deleteFunction}/>)}
     </div>
   )
 }
@@ -59,11 +63,10 @@ const App = () => {
 
   useEffect(() => {
     console.log('Effect starts here')
-    axios
-      .get('http://localhost:3001/persons')
-      .then(response => {
-        console.log('Promise fulfilled.', response)
-        setPersons(response.data)
+    personService
+      .getAll()
+      .then(initPersons => {
+        setPersons(initPersons)
       })
   }, [])
 
@@ -71,23 +74,55 @@ const App = () => {
     event.preventDefault()
     console.log("Adding new person")
 
-    const personExistsAlready = persons.some(
-      person => person.name == newName
+    const personIfExists = persons.find(
+      person => person.name === newName
     )
-    if(!personExistsAlready) {
+    if(personIfExists === undefined) {
+      console.log("Person didn't exist, adding new", newName)
       const personObject = {
         name: newName, 
         number: newNumber,
       }
-    
-      setPersons(persons.concat(personObject))
-      setNewName('')
-      setNewNumber('')
+
+      personService
+        .create(personObject)
+        .then(returnedPerson => {
+          console.log("Person put on server", returnedPerson)
+          setPersons(persons.concat(returnedPerson))
+          setNewName('')
+          setNewNumber('')
+        })
     }
     else { 
-      const msg = `${newName} is already added to phonebook`
-      alert(msg)
+      console.log("Person exists already, asking to update phone number ", newName)
+      const msg = `${newName} is already added to phonebook, replace the old number with a new one?`
+      const response = confirm(msg)
+      if(response) {
+        const updatedPerson = {...personIfExists, number: newNumber}
+        personService
+          .update(updatedPerson.id, updatedPerson)
+          .then(returnedPerson => {
+            setPersons(persons.map(person => 
+              person.id === returnedPerson.id ? returnedPerson : person))
+            setNewName('')
+            setNewNumber('')
+          })
+      }
+      else {
+        console.log("Didn't change the number")
+      }
     }
+  }
+
+  const deletePerson = id => {
+    console.log("Going to delete and here we are ", id)
+    personService
+      .remove(id)
+      .then( responseperson => {
+        console.log("Person removed succesfully ", responseperson.id)
+        const filteredPersons = persons.filter(person => person.id !== responseperson.id)
+        setPersons(filteredPersons)
+      })
   }
 
   const handleFilterChange = (event) => {
@@ -123,7 +158,10 @@ const App = () => {
         handleNumberChange={handleNumberChange}
       />
       <h2>Numbers</h2>
-      <Persons persons={personsToShow} />
+      <Persons 
+        persons={personsToShow} 
+        deleteFunction={deletePerson}
+      />
     </div>
   )
 

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import axios from 'axios'
 import personService from './services/persons'
+import './index.css'
 
 const Filter = ({newFilter, handleFilterChange}) => {
   return(
@@ -55,11 +56,26 @@ const Persons = ({persons, deleteFunction}) => {
   )
 }
 
+// type: notification, error (there should be a better way...)
+const Notification = ({message, type}) => {
+  if (message === null) {
+    return null
+  }
+
+  return (
+    <div className={type}>
+      {message}
+    </div>
+  )
+}
+
 const App = () => {
   const [persons, setPersons] = useState([])
   const [newName, setNewName] = useState('')
   const [newNumber, setNewNumber] = useState('')
   const [newFilter, setNewFilter] = useState('')
+  const [notification, setNotification] = useState('notification here...')
+  const [notificationState, setNotificationState] = useState('notification')
 
   useEffect(() => {
     console.log('Effect starts here')
@@ -91,6 +107,14 @@ const App = () => {
           setPersons(persons.concat(returnedPerson))
           setNewName('')
           setNewNumber('')
+          setNotificationState('notification')
+          setNotification(`Added '${returnedPerson.name}'`)
+          setTimeout(() => {setNotification(null)}, 4000)
+        })
+        .catch(error => {
+          setNotificationState('error')
+          setNotification(`Could not add information of '${responseperson.name}'.`)
+          setTimeout(() => {setNotification(null)}, 4000)
         })
     }
     else { 
@@ -106,6 +130,14 @@ const App = () => {
               person.id === returnedPerson.id ? returnedPerson : person))
             setNewName('')
             setNewNumber('')
+            setNotificationState('notification')
+            setNotification(`Updated '${returnedPerson.name}'`)
+            setTimeout(() => {setNotification(null)}, 4000)
+          })
+          .catch(error => {
+            setNotificationState('error')
+            setNotification(`Could not update information of '${responseperson.name}'.`)
+            setTimeout(() => {setNotification(null)}, 4000)
           })
       }
       else {
@@ -122,6 +154,14 @@ const App = () => {
         console.log("Person removed succesfully ", responseperson.id)
         const filteredPersons = persons.filter(person => person.id !== responseperson.id)
         setPersons(filteredPersons)
+        setNotificationState('notification')
+        setNotification(`Deleted '${responseperson.name}'`)
+        setTimeout(() => {setNotification(null)}, 4000)
+      })
+      .catch(error => {
+        setNotificationState('error')
+        setNotification(`Information of '${responseperson.name}' has already been removed from server`)
+        setTimeout(() => {setNotification(null)}, 4000)
       })
   }
 
@@ -148,6 +188,7 @@ const App = () => {
   return (
     <div>
       <h2>Phonebook</h2>
+      <Notification message={notification} type={notificationState}/>
       <Filter newFilter={newFilter} handleFilterChange={handleFilterChange}/>
       <h2>add a new</h2>
       <PersonForm 

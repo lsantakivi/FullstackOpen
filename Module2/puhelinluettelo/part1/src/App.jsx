@@ -150,17 +150,23 @@ const App = () => {
     console.log("Going to delete and here we are ", id)
     personService
       .remove(id)
-      .then( responseperson => {
-        console.log("Person removed succesfully ", responseperson.id)
-        const filteredPersons = persons.filter(person => person.id !== responseperson.id)
+      .then( responseId => {
+        console.log("Person removed succesfully ", responseId)
+        const deletedPerson = persons.find(person => person.id === responseId) // this is so stupid...
+        console.log("Just got deletedPerson ", deletedPerson)
+        const filteredPersons = persons.filter(person => person.id !== responseId)
+        console.log("Just filtered persons", filteredPersons)
         setPersons(filteredPersons)
+        console.log("Just set filtered persons")
         setNotificationState('notification')
-        setNotification(`Deleted '${responseperson.name}'`)
+        console.log("Just set notification state to notification")
+        setNotification(`Deleted '${deletedPerson.name}'`)
+        console.log("and set notification")
         setTimeout(() => {setNotification(null)}, 4000)
       })
       .catch(error => {
         setNotificationState('error')
-        setNotification(`Information of '${responseperson.name}' has already been removed from server`)
+        setNotification(`Information has already been removed from server`)
         setTimeout(() => {setNotification(null)}, 4000)
       })
   }

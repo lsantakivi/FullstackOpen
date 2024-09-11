@@ -1,7 +1,9 @@
 const express = require('express')
 const morgan = require('morgan')
+const cors = require('cors')
 
 const app = express()
+app.use(cors())
 
 let persons = [
     {
@@ -74,7 +76,7 @@ app.delete('/api/persons/:id', (request, response) => {
     const id = request.params.id
     persons = persons.filter(person => person.id != id)
 
-    response.status(204).end()
+    response.json(id)
 })
 
 const generateId = () => {
@@ -101,8 +103,9 @@ app.post('/api/persons', (request, response) => {
         })
     }
 
+    const newId = generateId()
     const person = {
-        id: generateId(),
+        id: `${newId}`,
         name: body.name,
         number: body.number
     }
@@ -113,7 +116,7 @@ app.post('/api/persons', (request, response) => {
     response.json(person)
 })
 
-const PORT = 3001
+const PORT = process.env.PORT || 3001
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`)
 })

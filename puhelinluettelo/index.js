@@ -1,6 +1,8 @@
+require('dotenv').config()
 const express = require('express')
 const morgan = require('morgan')
 const cors = require('cors')
+const Person = require('./models/person')
 
 const app = express()
 app.use(cors())
@@ -43,7 +45,6 @@ morgan.token('data', (req, res) => {
 app.use(express.json())
 app.use(morgan(':method :url :status :res[content-length] - :response-time ms :data'))
 
-
 app.get('/', (request, response) => {
     response.send('Nothing too see here!')
 })
@@ -58,19 +59,15 @@ app.get('/info', (request, response) => {
 
 
 app.get('/api/persons', (request, response) => {
-    response.json(persons)
+    Person.find({}).then(persons => {
+        response.json(persons)
+    })
 })
 
 app.get('/api/persons/:id', (request, response) => {
-    const id = request.params.id
-    const person = persons.find(person => person.id == id)
-
-    if(person) {
+    Person.findById(request.params.id).then(person => {
         response.json(person)
-    }
-    else {
-        response.status(404).end()
-    }
+    })
 })
 
 app.delete('/api/persons/:id', (request, response) => {
@@ -79,12 +76,6 @@ app.delete('/api/persons/:id', (request, response) => {
 
     response.json(id)
 })
-
-const generateId = () => {
-    const newId = Math.floor(Math.random() * 100000)
-    console.log("generateId generated ", newId)
-    return newId
-}
   
 app.post('/api/persons', (request, response) => {
     const body = request.body
@@ -98,23 +89,22 @@ app.post('/api/persons', (request, response) => {
             error: 'Number is missing'
         })
     }
+    /* This is not ready for mongoDB yet
     if(persons.find(person => person.name.toLowerCase() == body.name.toLowerCase())) {
         return response.status(400).json({
             error: 'Name must be unique!'
         })
-    }
+    }*/
 
-    const newId = generateId()
-    const person = {
-        id: `${newId}`,
+    const person = new Person({
         name: body.name,
-        number: body.number
-    }
+        number: body.number,
+    })
 
-    console.log("Creating new person ",  person)
-
-    persons = persons.concat(person)
-    response.json(person)
+    person.save().then(savedPerson => {
+        console.log("Created new person ", savedPerson)
+        response.json(savedPerson)
+    })
 })
 
 const PORT = process.env.PORT || 3001
